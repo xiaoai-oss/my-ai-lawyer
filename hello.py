@@ -27,7 +27,7 @@ with st.sidebar:
             file_content = uploaded_file.read().decode("utf-8")
         st.success("✅ 文件已加载！")
     else:
-        with open("test.txt", "r", encoding="utf-8") as f:
+        with open("YHNGF.txt", "r", encoding="utf-8") as f:
             file_content = f.read()
         st.info("📌 当前使用默认文件")
 
