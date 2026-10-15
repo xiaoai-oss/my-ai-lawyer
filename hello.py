@@ -3,11 +3,13 @@ import requests
 from pypdf import PdfReader
 from docx import Document
 
-st.set_page_config(page_title="我的AI法律顾问", page_icon="⚖️")
+st.set_page_config(page_title="我的AI法律顾问", page_icon="⚖️", layout="wide")
+
 st.title("⚖️ 我的AI法律顾问")
+st.caption("上传法律文件，然后问我任何问题。")
 
 with st.sidebar:
-    st.header("上传文件")
+    st.header("📂 上传文件")
     uploaded_file = st.file_uploader("选择 .txt / .pdf / .docx 文件", type=["txt", "pdf", "docx"])
     
     if uploaded_file is not None:
@@ -23,11 +25,15 @@ with st.sidebar:
                 file_content += para.text + "\n"
         else:
             file_content = uploaded_file.read().decode("utf-8")
-        st.success("文件已加载！")
+        st.success("✅ 文件已加载！")
     else:
-        with open("YHNGF.txt", "r", encoding="utf-8") as f:
+        with open("test.txt", "r", encoding="utf-8") as f:
             file_content = f.read()
-        st.info("当前使用默认文件")
+        st.info("📌 当前使用默认文件")
+
+    if st.button("🗑️ 清空对话"):
+        st.session_state.messages = []
+        st.rerun()
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
