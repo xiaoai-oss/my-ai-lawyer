@@ -1,23 +1,27 @@
 import streamlit as st
 import requests
 from pypdf import PdfReader
+from docx import Document
 
 st.set_page_config(page_title="我的AI法律顾问", page_icon="⚖️")
 st.title("⚖️ 我的AI法律顾问")
 
 with st.sidebar:
     st.header("上传文件")
-    uploaded_file = st.file_uploader("选择 .txt 或 .pdf 文件", type=["txt", "pdf"])
+    uploaded_file = st.file_uploader("选择 .txt / .pdf / .docx 文件", type=["txt", "pdf", "docx"])
     
     if uploaded_file is not None:
-        # 如果是 PDF，提取文字
         if uploaded_file.name.endswith(".pdf"):
             reader = PdfReader(uploaded_file)
             file_content = ""
             for page in reader.pages:
                 file_content += page.extract_text()
+        elif uploaded_file.name.endswith(".docx"):
+            doc = Document(uploaded_file)
+            file_content = ""
+            for para in doc.paragraphs:
+                file_content += para.text + "\n"
         else:
-            # 如果是 txt，直接读
             file_content = uploaded_file.read().decode("utf-8")
         st.success("文件已加载！")
     else:
