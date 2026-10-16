@@ -8,6 +8,13 @@ st.set_page_config(page_title="我的AI法律顾问", page_icon="⚖️", layout
 st.title("⚖️ 我的AI法律顾问")
 st.caption("上传法律文件，然后问我任何问题。")
 
+# 把长文件切成小段
+def split_text(text, chunk_size=800):
+    chunks = []
+    for i in range(0, len(text), chunk_size):
+        chunks.append(text[i:i + chunk_size])
+    return chunks
+
 with st.sidebar:
     st.header("📂 上传文件")
     uploaded_file = st.file_uploader("选择 .txt / .pdf / .docx 文件", type=["txt", "pdf", "docx"])
@@ -53,7 +60,25 @@ if question:
     url = "https://api.deepseek.com/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
 
-    prompt = f"请根据以下资料回答问题：\n{file_content}\n\n问题：{question}"
+    # 把文件切成小段
+    chunks = split_text(file_content, 800)
+    
+    # 找出跟问题最相关的几段
+    relevant_chunks = []
+    for chunk in chunks:
+        if any(word in chunk for word in question.split()):
+            relevant_chunks.append(chunk)
+    
+    # 如果没找到相关段落，就用前几段
+    if not relevant_chunks:
+        relevant_chunks = chunks[:3]
+    else:
+        relevant_chunks = relevant_chunks[:3]
+    
+    # 把找到的段落拼起来
+    context = "\n\n".join(relevant_chunks)
+
+    prompt = f"请根据以下资料回答问题：\n{context}\n\n问题：{question}"
     data = {"model": "deepseek-chat", "messages": [{"role": "user", "content": prompt}]}
 
     response = requests.post(url, headers=headers, json=data)
