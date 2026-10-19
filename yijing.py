@@ -3,9 +3,11 @@ import requests
 import random
 import time
 
+# 1. 优化了网页标签图标（太极☯️）和页面布局
 st.set_page_config(page_title="AI 周易解卦助手", page_icon="☯️", layout="centered")
 
-st.title("🎋 AI 周易摇签助手")
+# 2. 标题图标改为太极，更贴合易经
+st.title("☯️ AI 周易摇签助手")
 st.caption("心诚则灵，摇一摇签筒，让 AI 为你解读签文。")
 
 # 64卦名称
@@ -26,27 +28,32 @@ if "gua_result" not in st.session_state:
 if "ai_reading" not in st.session_state:
     st.session_state.ai_reading = None
 if "last_shake_time" not in st.session_state:
-    st.session_state.last_shake_time = 0 # 记录上次摇签的时间戳
+    st.session_state.last_shake_time = 0 
 
 # 侧边栏
 with st.sidebar:
-    st.header("🔮 摇签筒")
-    question = st.text_input("默念你的问题（至少8个字）：", placeholder="比如：我最近的财运如何？")
+    # 3. 侧边栏图标改为古书卷轴 📜，更有仪式感
+    st.header("📜 求签问卜")
+    question = st.text_input("默念你的问题（8~15个字）：", placeholder="比如：我最近的财运如何发展？")
     
-    if st.button("🎋 摇一摇"):
-        # 1. 检查字数是否满足 8 个字
-        if len(question.strip()) < 8:
-            st.warning("心诚则灵，问题请写满8个字以上哦～")
+    # 4. 按钮图标改为竹签 🎋 或者香 🪔
+    if st.button("🎋 摇一摇签筒"):
+        # 去除前后空格计算字数
+        q_len = len(question.strip())
+        
+        # 判断字数是否在 8-15 之间
+        if q_len < 8 or q_len > 15:
+            st.warning(f"当前字数 {q_len}。心诚则灵，问题请控制在 8 到 15 个字之间哦～")
         else:
-            # 2. 检查冷却时间（59秒）
+            # 检查冷却时间（59秒）
             current_time = time.time()
             time_passed = current_time - st.session_state.last_shake_time
             
             if time_passed < 59:
                 remaining = int(59 - time_passed)
-                st.error(f"签筒需要休息，请静心等待 {remaining} 秒后再摇。")
+                st.error(f"签筒需要静心休息，请等待 {remaining} 秒后再摇。")
             else:
-                # 3. 满足条件，开始摇签
+                # 满足条件，开始摇签
                 with st.spinner("签筒摇晃中... 哗啦哗啦..."):
                     time.sleep(1.5) 
                     
@@ -63,13 +70,12 @@ with st.sidebar:
                     "qian_number": qian_number
                 }
                 st.session_state.ai_reading = None
-                st.session_state.last_shake_time = current_time # 更新最后一次摇签时间
+                st.session_state.last_shake_time = current_time
 
 # 主界面
 if st.session_state.gua_result:
     res = st.session_state.gua_result
     
-    # 修复了原来的 Markdown 格式 Bug
     st.markdown(f"### 你问的问题是：{res['question']}")
     
     # 签文卡片展示
@@ -112,4 +118,4 @@ if st.session_state.gua_result:
     st.caption("⚠️ 免责声明：本产品仅供娱乐和文化交流，请理性看待。")
 
 else:
-    st.info("👈 请在左侧输入你的问题（至少8个字），然后点击“摇一摇”。")
+    st.info("☯️ 请在左侧默念问题（8~15个字），然后点击“摇一摇签筒”。")
