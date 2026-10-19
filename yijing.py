@@ -20,45 +20,59 @@ gua_names = [
     "巽为风", "兑为泽", "风水涣", "水泽节", "风泽中孚", "雷山小过", "水火既济", "火水未济"
 ]
 
+# 初始化状态
 if "gua_result" not in st.session_state:
     st.session_state.gua_result = None
 if "ai_reading" not in st.session_state:
     st.session_state.ai_reading = None
+if "last_shake_time" not in st.session_state:
+    st.session_state.last_shake_time = 0 # 记录上次摇签的时间戳
 
 # 侧边栏
 with st.sidebar:
     st.header("🔮 摇签筒")
-    question = st.text_input("默念你的问题（比如：我最近的财运如何？）：")
+    question = st.text_input("默念你的问题（至少8个字）：", placeholder="比如：我最近的财运如何？")
     
     if st.button("🎋 摇一摇"):
-        if not question:
-            st.warning("请先输入你想问的问题哦！")
+        # 1. 检查字数是否满足 8 个字
+        if len(question.strip()) < 8:
+            st.warning("心诚则灵，问题请写满8个字以上哦～")
         else:
-            # 制造一个1.5秒的摇签动画效果
-            with st.spinner("签筒摇晃中... 哗啦哗啦..."):
-                time.sleep(1.5) 
-                
-            ben_gua = random.choice(gua_names)
-            bian_gua = random.choice(gua_names)
-            dong_yao = random.randint(1, 6)
-            qian_number = random.randint(1, 100)
+            # 2. 检查冷却时间（59秒）
+            current_time = time.time()
+            time_passed = current_time - st.session_state.last_shake_time
             
-            st.session_state.gua_result = {
-                "question": question,
-                "ben_gua": ben_gua,
-                "bian_gua": bian_gua,
-                "dong_yao": dong_yao,
-                "qian_number": qian_number
-            }
-            st.session_state.ai_reading = None
+            if time_passed < 59:
+                remaining = int(59 - time_passed)
+                st.error(f"签筒需要休息，请静心等待 {remaining} 秒后再摇。")
+            else:
+                # 3. 满足条件，开始摇签
+                with st.spinner("签筒摇晃中... 哗啦哗啦..."):
+                    time.sleep(1.5) 
+                    
+                ben_gua = random.choice(gua_names)
+                bian_gua = random.choice(gua_names)
+                dong_yao = random.randint(1, 6)
+                qian_number = random.randint(1, 100)
+                
+                st.session_state.gua_result = {
+                    "question": question,
+                    "ben_gua": ben_gua,
+                    "bian_gua": bian_gua,
+                    "dong_yao": dong_yao,
+                    "qian_number": qian_number
+                }
+                st.session_state.ai_reading = None
+                st.session_state.last_shake_time = current_time # 更新最后一次摇签时间
 
 # 主界面
 if st.session_state.gua_result:
     res = st.session_state.gua_result
     
-    # 好看的“签子”卡片展示
-    st.markdown(f"### 你问的问题是：**{res['question']}**")
+    # 修复了原来的 Markdown 格式 Bug
+    st.markdown(f"### 你问的问题是：{res['question']}")
     
+    # 签文卡片展示
     st.markdown(f"""
     <div style="background-color: #FFF8DC; border: 2px solid #D2B48C; border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
         <h1 style="color: #8B0000; font-family: 'KaiTi', '楷体', serif; margin: 0;">第 {res['qian_number']} 签</h1>
@@ -98,4 +112,4 @@ if st.session_state.gua_result:
     st.caption("⚠️ 免责声明：本产品仅供娱乐和文化交流，请理性看待。")
 
 else:
-    st.info("👈 请在左侧输入你的问题，然后点击“摇一摇”。")
+    st.info("👈 请在左侧输入你的问题（至少8个字），然后点击“摇一摇”。")
