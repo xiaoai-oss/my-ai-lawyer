@@ -8,6 +8,37 @@ import edge_tts
 # 1. 页面配置
 st.set_page_config(page_title="AI 周易解卦助手", page_icon="☯️", layout="centered")
 
+# 2. 注入 CSS 样式：宣纸背景 + 古风按钮
+st.markdown("""
+<style>
+    /* 整体背景设为宣纸米黄色 */
+    .stApp {
+        background-color: #FDF5E6;
+    }
+    /* 侧边栏背景微调 */
+    [data-testid="stSidebar"] {
+        background-color: #F4ECE1;
+    }
+    /* 主按钮（摇一摇）改为朱红色 */
+    .stButton>button {
+        background-color: #C0392B;
+        color: white;
+        border-radius: 8px;
+        border: none;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    .stButton>button:hover {
+        background-color: #922B21;
+        color: white;
+    }
+    /* 标题和文字颜色微调为墨色 */
+    h1, h2, h3, p {
+        color: #2C3E50;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("☯️ AI 周易摇签助手")
 st.caption("心诚则灵，摇一摇签筒，让 AI 为你解读签文。")
 
@@ -23,17 +54,17 @@ gua_names = [
     "巽为风", "兑为泽", "风水涣", "水泽节", "风泽中孚", "雷山小过", "水火既济", "火水未济"
 ]
 
-# 2. 生成语音的函数
+# 3. 生成语音函数
 def generate_voice(text, filename="output.mp3"):
-    voice = "zh-CN-XiaoxiaoNeural"  # 微软晓晓（温柔女声）
-    rate = "-10%"                   # 语速稍微慢一点，更有禅意
+    voice = "zh-CN-XiaoxiaoNeural"
+    rate = "-10%" 
     async def _generate():
         communicate = edge_tts.Communicate(text, voice, rate=rate)
         await communicate.save(filename)
     asyncio.run(_generate())
     return filename
 
-# 初始化状态
+# 状态初始化
 if "gua_result" not in st.session_state:
     st.session_state.gua_result = None
 if "ai_reading" not in st.session_state:
@@ -48,7 +79,6 @@ with st.sidebar:
     
     if st.button("🎋 摇一摇签筒"):
         q_len = len(question.strip())
-        
         if q_len < 8 or q_len > 15:
             st.warning(f"当前字数 {q_len}。心诚则灵，问题请控制在 8 到 15 个字之间哦～")
         else:
@@ -83,12 +113,13 @@ if st.session_state.gua_result:
     
     st.markdown(f"### 你问的问题是：{res['question']}")
     
-    # 签文卡片
+    # 优化后的签文卡片（增加了一点金色边框和阴影）
     st.markdown(f"""
-    <div style="background-color: #FFF8DC; border: 2px solid #D2B48C; border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-        <h1 style="color: #8B0000; font-family: 'KaiTi', '楷体', serif; margin: 0;">第 {res['qian_number']} 签</h1>
-        <h2 style="color: #8B4513; font-family: 'KaiTi', '楷体', serif; margin: 10px 0;">{res['ben_gua']}</h2>
-        <p style="color: #555; margin: 0;">本卦：{res['ben_gua']} ｜ 变卦：{res['bian_gua']} ｜ 动爻：第 {res['dong_yao']} 爻</p>
+    <div style="background-color: #FFF8DC; border: 2px solid #D4AF37; border-radius: 12px; padding: 30px 20px; text-align: center; margin-bottom: 25px; box-shadow: 0 8px 16px rgba(0,0,0,0.1);">
+        <h1 style="color: #8B0000; font-family: 'KaiTi', '楷体', serif; margin: 0; font-size: 42px;">第 {res['qian_number']} 签</h1>
+        <div style="width: 50px; height: 2px; background-color: #D4AF37; margin: 15px auto;"></div>
+        <h2 style="color: #8B4513; font-family: 'KaiTi', '楷体', serif; margin: 10px 0; font-size: 32px;">{res['ben_gua']}</h2>
+        <p style="color: #666; margin-top: 15px; font-size: 14px;">本卦：{res['ben_gua']} ｜ 变卦：{res['bian_gua']} ｜ 动爻：第 {res['dong_yao']} 爻</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -121,11 +152,17 @@ if st.session_state.gua_result:
             
     st.success(st.session_state.ai_reading)
     
-    # 👇 语音播放按钮 👇
+    # 语音播放
     if st.button("🔊 听 AI 道长语音解读"):
         with st.spinner("道长正在录制语音..."):
             audio_file = generate_voice(st.session_state.ai_reading)
             st.audio(audio_file, format="audio/mp3", autoplay=True)
+
+    # 👇 商业闭环：随喜打赏区 👇
+    st.write("---") 
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        st.image("pay.png", caption="若解签对你有启发，可扫码随喜结缘 ☕", width=180)
 
     st.caption("⚠️ 免责声明：本产品仅供娱乐和文化交流，请理性看待。")
 
