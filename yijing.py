@@ -2,11 +2,12 @@ import streamlit as st
 import requests
 import random
 import time
+import asyncio
+import edge_tts
 
-# 1. 优化了网页标签图标（太极☯️）和页面布局
+# 1. 页面配置
 st.set_page_config(page_title="AI 周易解卦助手", page_icon="☯️", layout="centered")
 
-# 2. 标题图标改为太极，更贴合易经
 st.title("☯️ AI 周易摇签助手")
 st.caption("心诚则灵，摇一摇签筒，让 AI 为你解读签文。")
 
@@ -22,6 +23,16 @@ gua_names = [
     "巽为风", "兑为泽", "风水涣", "水泽节", "风泽中孚", "雷山小过", "水火既济", "火水未济"
 ]
 
+# 2. 生成语音的函数
+def generate_voice(text, filename="output.mp3"):
+    voice = "zh-CN-XiaoxiaoNeural"  # 微软晓晓（温柔女声）
+    rate = "-10%"                   # 语速稍微慢一点，更有禅意
+    async def _generate():
+        communicate = edge_tts.Communicate(text, voice, rate=rate)
+        await communicate.save(filename)
+    asyncio.run(_generate())
+    return filename
+
 # 初始化状态
 if "gua_result" not in st.session_state:
     st.session_state.gua_result = None
@@ -32,20 +43,15 @@ if "last_shake_time" not in st.session_state:
 
 # 侧边栏
 with st.sidebar:
-    # 3. 侧边栏图标改为古书卷轴 📜，更有仪式感
     st.header("📜 求签问卜")
     question = st.text_input("默念你的问题（8~15个字）：", placeholder="比如：我最近的财运如何发展？")
     
-    # 4. 按钮图标改为竹签 🎋 或者香 🪔
     if st.button("🎋 摇一摇签筒"):
-        # 去除前后空格计算字数
         q_len = len(question.strip())
         
-        # 判断字数是否在 8-15 之间
         if q_len < 8 or q_len > 15:
             st.warning(f"当前字数 {q_len}。心诚则灵，问题请控制在 8 到 15 个字之间哦～")
         else:
-            # 检查冷却时间（59秒）
             current_time = time.time()
             time_passed = current_time - st.session_state.last_shake_time
             
@@ -53,7 +59,6 @@ with st.sidebar:
                 remaining = int(59 - time_passed)
                 st.error(f"签筒需要静心休息，请等待 {remaining} 秒后再摇。")
             else:
-                # 满足条件，开始摇签
                 with st.spinner("签筒摇晃中... 哗啦哗啦..."):
                     time.sleep(1.5) 
                     
@@ -78,7 +83,7 @@ if st.session_state.gua_result:
     
     st.markdown(f"### 你问的问题是：{res['question']}")
     
-    # 签文卡片展示
+    # 签文卡片
     st.markdown(f"""
     <div style="background-color: #FFF8DC; border: 2px solid #D2B48C; border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
         <h1 style="color: #8B0000; font-family: 'KaiTi', '楷体', serif; margin: 0;">第 {res['qian_number']} 签</h1>
@@ -115,6 +120,13 @@ if st.session_state.gua_result:
             st.session_state.ai_reading = reply
             
     st.success(st.session_state.ai_reading)
+    
+    # 👇 语音播放按钮 👇
+    if st.button("🔊 听 AI 道长语音解读"):
+        with st.spinner("道长正在录制语音..."):
+            audio_file = generate_voice(st.session_state.ai_reading)
+            st.audio(audio_file, format="audio/mp3", autoplay=True)
+
     st.caption("⚠️ 免责声明：本产品仅供娱乐和文化交流，请理性看待。")
 
 else:
