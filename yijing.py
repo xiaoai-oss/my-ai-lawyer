@@ -25,7 +25,7 @@ gua_names = [
 
 # 2. 生成语音的函数
 def generate_voice(text, filename="output.mp3"):
-    voice = "zh-CN-XiaoxiaoNeural"  # 微软晓晓（温柔女声）
+    voice = "zh-CN-YunjianNeural"  # 微软晓晓（温柔女声）
     rate = "-10%"                   # 语速稍微慢一点，更有禅意
     async def _generate():
         communicate = edge_tts.Communicate(text, voice, rate=rate)
