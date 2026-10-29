@@ -4,30 +4,35 @@ import asyncio
 import edge_tts
 import re
 
-# 1. 页面配置
-st.set_page_config(page_title="AI 短剧分镜大师", page_icon="🎬", layout="centered")
+# 1. 页面配置（居中对齐，适合手机端）
+st.set_page_config(
+    page_title="AI 短剧分镜大师", 
+    page_icon="🎬", 
+    layout="centered", 
+    menu_items={}
+)
 
-# 2. 👇 最新版“终极隐藏” CSS（干掉右上角 Fork 和右下角红条）👇
+# 2. 👇 终极隐藏水印 CSS（针对 Streamlit 最新版）👇
 hide_st_style = """
             <style>
-            /* 隐藏顶部工具栏（Fork, GitHub, 菜单） */
-            [data-testid="stToolbar"] {visibility: hidden !important;}
-            [data-testid="stDecoration"] {visibility: hidden !important;}
-            header {visibility: hidden !important;}
-            
-            /* 隐藏右下角红条水印和底部管理按钮 */
-            [data-testid="stStatusWidget"] {visibility: hidden !important;}
-            footer {visibility: hidden !important;}
-            [data-testid="stFooter"] {visibility: hidden !important;}
-            
-            /* 隐藏主菜单 */
+            /* 隐藏右上角菜单、工具栏、Fork、GitHub图标 */
             #MainMenu {visibility: hidden !important;}
+            header {visibility: hidden !important;}
+            [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
+            [data-testid="stHeader"] {visibility: hidden !important; display: none !important;}
+            [data-testid="stDecoration"] {visibility: hidden !important; display: none !important;}
             
-            /* 减少顶部空白 */
-            [data-testid="stAppViewContainer"] > .main { padding-top: 2rem !important; }
+            /* 隐藏底部红条水印、Footer、StatusWidget */
+            footer {visibility: hidden !important; display: none !important;}
+            [data-testid="stFooter"] {visibility: hidden !important; display: none !important;}
+            [data-testid="stStatusWidget"] {visibility: hidden !important; display: none !important;}
+            .viewerBadge_container__1QSob {display: none !important;}
             
-            /* 手机端按钮铺满 */
-            .stButton>button { width: 100% !important; }
+            /* 隐藏底部的空白留白 */
+            .stApp > footer {visibility: hidden !important; display: none !important;}
+            
+            /* 稍微减少顶部留白，让页面更紧凑 */
+            .block-container {padding-top: 2rem !important;}
             </style>
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
@@ -61,6 +66,7 @@ if st.button("✨ 一键生成分镜和配音", type="primary", use_container_wi
         st.warning("请先粘贴剧本内容哦！")
     else:
         with st.spinner("AI 导演正在构思画面并配音..."):
+            # 获取 API Key
             api_key = st.secrets["API_KEY"]
             url = "https://api.deepseek.com/chat/completions"
             headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
@@ -79,7 +85,10 @@ if st.button("✨ 一键生成分镜和配音", type="primary", use_container_wi
             reply = response.json()["choices"][0]["message"]["content"]
             
             st.success("🎉 生成完毕！提示词可直接复制。")
+            
+            # 展示结果
             st.markdown(reply)
+            
             st.write("---")
             
             # 提取台词并配音
@@ -96,4 +105,5 @@ if st.button("✨ 一键生成分镜和配音", type="primary", use_container_wi
                 except Exception as e:
                     st.error(f"配音生成失败：{e}")
 
+# 6. 底部提示
 st.caption("🎬 创作流程：生成提示词 -> 即梦/可灵出图 -> 剪映合成。")
