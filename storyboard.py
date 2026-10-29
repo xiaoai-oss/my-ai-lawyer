@@ -122,5 +122,10 @@ if st.button("✨ 一键生成分镜和配音", type="primary", use_container_wi
                         st.info("没有在分镜中检测到明显的台词，不生成配音。")
                 except Exception as e:
                     st.error(f"配音生成失败：{e}")
-
-st.caption("🎬 创作流程：生成提示词 -> 即梦/可灵出图 -> 剪映合成。")
+# 在最底部加一个巨大的白色色块，强行盖住水印
+st.markdown(
+    """
+    <div style="position: fixed; bottom: 0; left: 0; width: 100%; height: 50px; background-color: white; z-index: 99999;"></div>
+    """, 
+    unsafe_allow_html=True
+)
