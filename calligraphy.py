@@ -13,53 +13,44 @@ st.markdown("""
     h1 { color: #2C3E50 !important; font-family: 'KaiTi', '楷体', serif; text-align: center; }
     p, label { color: #4A4A4A !important; font-family: 'KaiTi', '楷体', serif; }
     .stChatMessage { background-color: #FFFFFF !important; border-left: 5px solid #8B0000 !important; border-radius: 5px; }
-    .stTextInput input { background-color: #FFFFFF !important; border: 1px solid #D3CBB8 !important; }
 </style>
 """, unsafe_allow_html=True)
 
 st.title("🖌️ AI 书法大师")
 st.caption("研墨、铺纸、提笔。跟大师聊聊书法，或者让它给你出个题。")
 
-# ================= 1. 书法大师的知识库与专属工具 =================
-# 咱们把五大书体的知识塞进字典里
+# ================= 1. 知识库与工具 =================
 CALLIGRAPHY_KNOWLEDGE = {
-    "篆书": "篆书分为大篆和小篆。特点是字形修长，线条圆润均匀，古朴典雅。代表人物：李斯（小篆鼻祖）。",
-    "隶书": "隶书起源于秦代，盛于汉代。特点是字形扁平，讲究'蚕头燕尾'、'一波三折'。代表人物：蔡邕。",
-    "楷书": "楷书又称正书，是现在通行的汉字手写正体字。特点是横平竖直，规矩严整。代表人物：颜真卿、柳公权、欧阳询、赵孟頫。",
-    "行书": "行书介于楷书和草书之间。特点是既流畅又易辨认。天下第一行书是王羲之的《兰亭序》。",
-    "草书": "草书为了书写便捷而产生。特点是结构简省、笔画连绵。代表人物：张旭、怀素（狂草）。"
+    "篆书": "篆书分为大篆和小篆。特点是字形修长，线条圆润均匀。代表人物：李斯。",
+    "隶书": "隶书字形扁平，讲究'蚕头燕尾'。代表人物：蔡邕。",
+    "楷书": "楷书横平竖直，规矩严整。代表人物：颜真卿、柳公权。",
+    "行书": "行书介于楷草之间，流畅易认。王羲之的《兰亭序》是天下第一行书。",
+    "草书": "草书结构简省、笔画连绵。代表人物：张旭、怀素。"
 }
 
 def get_calligraphy_knowledge(style_name):
-    """查询五大书体的百科知识"""
-    # 简单匹配，如果用户输入“行”，也能匹配到“行书”
     for k, v in CALLIGRAPHY_KNOWLEDGE.items():
         if style_name in k or k in style_name:
             return f"关于【{k}】：{v}"
     return "暂无该书法流派的详细资料。"
 
 def get_calligraphy_styles(word):
-    """查询某个字的书写建议"""
-    styles = list(CALLIGRAPHY_KNOWLEDGE.keys())
-    random_style = random.choice(styles)
-    return f"已调取《历代书法字典》：关于“{word}”字，建议参考它在【{random_style}】中的经典写法。请平心静气，悬腕书写。"
+    return f"关于“{word}”字，建议参考历代名家的经典碑帖。请平心静气，悬腕书写。"
 
 def random_practice_char():
-    """随机抽取练习字"""
     chars = ["永", "和", "龙", "福", "静", "道", "禅", "悟", "云", "鹤"]
-    selected = random.choice(chars)
-    return f"抽签结果：今日宜练“{selected}”字。此字结构精妙，请悬腕书写。"
+    return random.choice(chars)
 
-# ================= 2. 将工具打包告诉大模型 =================
+# ================= 2. 工具打包 =================
 tools = [
     {
         "type": "function",
         "function": {
             "name": "get_calligraphy_knowledge",
-            "description": "查询中国书法五大书体（篆、隶、楷、行、草）的详细介绍、特点和代表人物",
+            "description": "查询中国书法五大书体（篆、隶、楷、行、草）的详细介绍",
             "parameters": {
                 "type": "object",
-                "properties": {"style_name": {"type": "string", "description": "书体名称，例如：楷书、行书、草书"}},
+                "properties": {"style_name": {"type": "string", "description": "书体名称"}},
                 "required": ["style_name"]
             }
         }
@@ -80,16 +71,39 @@ tools = [
         "type": "function",
         "function": {
             "name": "random_practice_char",
-            "description": "当用户不知道练什么字，让你推荐时调用",
+            "description": "当用户不知道练什么字，让你推荐时调用，返回一个单字",
             "parameters": {"type": "object", "properties": {}}
         }
     }
 ]
 
+# 👇 新增：展示书法真迹的 HTML 组件 👇
+def show_calligraphy_art(char, style="楷书"):
+    # 根据书体选择不同的 CSS 字体
+    font_map = {
+        "楷书": "'KaiTi', '楷体', serif",
+        "行书": "'STXingkai', '华文行楷', cursive",
+        "草书": "'STXingkai', '华文行楷', cursive",
+        "隶书": "'LiSu', '隶书', serif",
+        "篆书": "'KaiTi', '楷体', serif"
+    }
+    font_family = font_map.get(style, "'KaiTi', '楷体', serif")
+    
+    html = f"""
+    <div style="background-color: #F9F6EE; border: 2px solid #D3CBB8; border-radius: 8px; padding: 40px; text-align: center; margin: 20px 0; box-shadow: 0 8px 16px rgba(0,0,0,0.1); position: relative;">
+        <h1 style="font-family: {font_family}; font-size: 120px; color: #1A1A1A; margin: 0; line-height: 1.2; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">{char}</h1>
+        <!-- 模拟红色印章 -->
+        <div style="position: absolute; bottom: 30px; right: 30px; width: 50px; height: 50px; border: 3px solid #B22222; color: #B22222; font-family: 'KaiTi'; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; transform: rotate(-5deg); border-radius: 4px;">
+            大师<br>之印
+        </div>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
+
 # ================= 3. 聊天界面 =================
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "阿弥陀佛。我是书法大师，今日想请教哪幅字？想了解五大书体，还是让我为你抽个字练练手？"}
+        {"role": "assistant", "content": "阿弥陀佛。我是书法大师。今日想请教哪幅字？想了解五大书体，还是让我为你抽个字练练手？"}
     ]
 
 for msg in st.session_state.messages:
@@ -107,8 +121,7 @@ if prompt := st.chat_input("与大师对话..."):
     url = "https://api.deepseek.com/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     
-    # 给大师注入灵魂提示词
-    system_prompt = "你是一位精通中国传统书法的大师，说话温文尔雅，带点古风。当用户询问篆、隶、楷、行、草等书体知识时，必须调用 get_calligraphy_knowledge 工具。当用户问某个字怎么写时，调用 get_calligraphy_styles 工具。当用户求字时，调用 random_practice_char。"
+    system_prompt = "你是一位精通中国传统书法的大师，说话温文尔雅。当用户询问书体知识时，调用 get_calligraphy_knowledge。当用户问某个字怎么写时，调用 get_calligraphy_styles。当用户求字时，调用 random_practice_char。"
     messages_with_system = [{"role": "system", "content": system_prompt}] + st.session_state.messages
     
     data = {"model": "deepseek-chat", "messages": messages_with_system, "tools": tools}
@@ -121,6 +134,8 @@ if prompt := st.chat_input("与大师对话..."):
             
             if tool_calls:
                 st.session_state.messages.append(response_message)
+                char_to_display = None # 记录要展示的字
+                style_to_display = "楷书"
                 
                 for tool_call in tool_calls:
                     function_name = tool_call["function"]["name"]
@@ -129,12 +144,16 @@ if prompt := st.chat_input("与大师对话..."):
                     if function_name == "get_calligraphy_knowledge":
                         st.info(f"📖 大师正在翻阅典籍，查阅【{function_args.get('style_name')}】...")
                         function_response = get_calligraphy_knowledge(function_args.get("style_name"))
+                        style_to_display = function_args.get("style_name")
                     elif function_name == "get_calligraphy_styles":
                         st.info(f"🔍 大师正在查阅【{function_args.get('word')}】字的写法...")
                         function_response = get_calligraphy_styles(function_args.get("word"))
+                        char_to_display = function_args.get("word")
                     elif function_name == "random_practice_char":
                         st.info("🎲 大师正在为你随机抽取练习字...")
-                        function_response = random_practice_char()
+                        char_result = random_practice_char()
+                        function_response = f"抽签结果：今日宜练“{char_result}”字。"
+                        char_to_display = char_result
                     else:
                         function_response = "未知工具"
                     
@@ -152,6 +171,10 @@ if prompt := st.chat_input("与大师对话..."):
                     
                     with st.chat_message("assistant"):
                         st.write(final_reply)
+                        # 👇 如果有要展示的字，直接渲染出书法作品 👇
+                        if char_to_display:
+                            show_calligraphy_art(char_to_display, style_to_display)
+                            
                     st.session_state.messages.append({"role": "assistant", "content": final_reply})
             else:
                 reply = response_message["content"]
