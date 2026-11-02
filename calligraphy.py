@@ -2,13 +2,15 @@ import streamlit as st
 import requests
 import json
 import random
+import asyncio
+import edge_tts
 
 st.set_page_config(page_title="AI 书法大师", page_icon="🖌️", layout="centered")
 
 # 👇 注入水墨古风 CSS 👇
 st.markdown("""
 <style>
-    .stApp { background-color: #FDF9F1; } /* 宣纸米白底色 */
+    .stApp { background-color: #FDF9F1; } 
     #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
     h1 { color: #2C3E50 !important; font-family: 'KaiTi', '楷体', serif; text-align: center; }
     p, label { color: #4A4A4A !important; font-family: 'KaiTi', '楷体', serif; }
@@ -18,6 +20,16 @@ st.markdown("""
 
 st.title("🖌️ AI 书法大师")
 st.caption("研墨、铺纸、提笔。跟大师聊聊书法，或者让它给你出个题。")
+
+# 👇 语音生成函数 👇
+def generate_voice(text, filename="shufa_voice.mp3"):
+    voice = "zh-CN-YunjianNeural"
+    rate = "-15%" 
+    async def _generate():
+        communicate = edge_tts.Communicate(text, voice, rate=rate)
+        await communicate.save(filename)
+    asyncio.run(_generate())
+    return filename
 
 # ================= 1. 知识库与工具 =================
 CALLIGRAPHY_KNOWLEDGE = {
@@ -48,8 +60,8 @@ tools = [
     {"type": "function", "function": {"name": "random_practice_char", "description": "随机抽字", "parameters": {"type": "object", "properties": {}}}}
 ]
 
-# ================= 3. 展示书法真迹（带“劉志強印”） =================
-def show_calligraphy_art(char, style="楷书"):
+# ================= 3. 展示书法真迹 =================
+def show_calligraphy_art(text, style="楷书"):
     font_map = {
         "楷书": "'KaiTi', '楷体', serif",
         "行书": "'STXingkai', '华文行楷', cursive",
@@ -58,13 +70,25 @@ def show_calligraphy_art(char, style="楷书"):
         "篆书": "'KaiTi', '楷体', serif"
     }
     font_family = font_map.get(style, "'KaiTi', '楷体', serif")
+    font_size = "80px" if len(text) <= 2 else "60px" if len(text) <= 4 else "40px"
     
-    # 💡 核心修复：将整个 HTML 压缩成一行，防止 Streamlit 解析失败！
-    html = f'<div style="background-color: #F9F6EE; border: 2px solid #D3CBB8; border-radius: 8px; padding: 40px; text-align: center; margin: 20px 0; box-shadow: 0 8px 16px rgba(0,0,0,0.1); position: relative;"><h1 style="font-family: {font_family}; font-size: 120px; color: #1A1A1A; margin: 0; line-height: 1.2; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">{char}</h1><div style="position: absolute; bottom: 30px; right: 30px; width: 60px; height: 60px; border: 3px solid #B22222; color: #B22222; font-family: \'KaiTi\', \'楷体\', serif; font-size: 16px; font-weight: bold; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; transform: rotate(-5deg); border-radius: 4px; line-height: 1;"><div style="width: 50%; text-align: center;">劉</div><div style="width: 50%; text-align: center;">志</div><div style="width: 50%; text-align: center;">強</div><div style="width: 50%; text-align: center;">印</div></div></div>'
-    
+    # 💡 HTML 被压缩成了一行，防止 Streamlit 渲染出错
+    html = f'<div style="background-color: #F9F6EE; border: 2px solid #D3CBB8; border-radius: 8px; padding: 30px 20px; text-align: center; margin: 20px 0; box-shadow: 0 8px 16px rgba(0,0,0,0.1); position: relative; min-height: 400px; display: flex; justify-content: center;"><div style="writing-mode: vertical-rl; text-orientation: upright; font-family: {font_family}; font-size: {font_size}; color: #1A1A1A; line-height: 1.5; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">{text}</div><div style="position: absolute; bottom: 30px; right: 30px; width: 60px; height: 60px; border: 3px solid #B22222; color: #B22222; font-family: \'KaiTi\', \'楷体\', serif; font-size: 16px; font-weight: bold; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; transform: rotate(-5deg); border-radius: 4px; line-height: 1;"><div style="width: 50%; text-align: center;">劉</div><div style="width: 50%; text-align: center;">志</div><div style="width: 50%; text-align: center;">強</div><div style="width: 50%; text-align: center;">印</div></div></div>'
     st.markdown(html, unsafe_allow_html=True)
 
-# ================= 4. 聊天界面 =================
+# ================= 4. 五体书展（主界面折叠区） =================
+with st.expander("📜 点击展开：五体书展（选择书体看效果）", expanded=False):
+    demo_style = st.selectbox("选择书体", ["篆书", "隶书", "楷书", "行书", "草书"])
+    demo_text = st.text_input("输入想写的字（建议4个字以内）", value="天道酬勤")
+    if st.button("✨ 立刻展示作品"):
+        st.session_state.show_demo = (demo_text, demo_style)
+
+if "show_demo" in st.session_state:
+    st.subheader(f"✨ {st.session_state.show_demo[1]} 作品展示")
+    show_calligraphy_art(st.session_state.show_demo[0], st.session_state.show_demo[1])
+    st.write("---")
+
+# ================= 5. 聊天界面与 Agent 逻辑 =================
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "assistant", "content": "阿弥陀佛。我是书法大师。今日想请教哪幅字？想了解五大书体，还是让我为你抽个字练练手？"}
@@ -85,7 +109,7 @@ if prompt := st.chat_input("与大师对话..."):
     url = "https://api.deepseek.com/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     
-    system_prompt = "你是一位精通中国传统书法的大师，说话温文尔雅。当用户询问书体知识时，调用 get_calligraphy_knowledge。当用户问某个字怎么写时，调用 get_calligraphy_styles。当用户求字时，调用 random_practice_char。"
+    system_prompt = "你是一位精通中国传统书法的大师。当用户询问书体知识时，调用 get_calligraphy_knowledge。当用户问某个字怎么写时，调用 get_calligraphy_styles。当用户求字时，调用 random_practice_char。"
     messages_with_system = [{"role": "system", "content": system_prompt}] + st.session_state.messages
     
     data = {"model": "deepseek-chat", "messages": messages_with_system, "tools": tools}
@@ -137,12 +161,19 @@ if prompt := st.chat_input("与大师对话..."):
                         st.write(final_reply)
                         if char_to_display:
                             show_calligraphy_art(char_to_display, style_to_display)
+                        
+                        with st.spinner("大师正在清清嗓子..."):
+                            audio_file = generate_voice(final_reply)
+                            st.audio(audio_file, format="audio/mp3", autoplay=True)
                             
                     st.session_state.messages.append({"role": "assistant", "content": final_reply})
             else:
                 reply = response_message["content"]
                 with st.chat_message("assistant"):
                     st.write(reply)
+                    with st.spinner("大师正在清清嗓子..."):
+                        audio_file = generate_voice(reply)
+                        st.audio(audio_file, format="audio/mp3", autoplay=True)
                 st.session_state.messages.append({"role": "assistant", "content": reply})
                 
         except Exception as e:
