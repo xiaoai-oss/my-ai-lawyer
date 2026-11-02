@@ -43,38 +43,9 @@ def random_practice_char():
 
 # ================= 2. 工具打包 =================
 tools = [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_calligraphy_knowledge",
-            "description": "查询中国书法五大书体（篆、隶、楷、行、草）的详细介绍",
-            "parameters": {
-                "type": "object",
-                "properties": {"style_name": {"type": "string", "description": "书体名称"}},
-                "required": ["style_name"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_calligraphy_styles",
-            "description": "查询某个特定汉字的书法写法建议",
-            "parameters": {
-                "type": "object",
-                "properties": {"word": {"type": "string", "description": "要查询的单个汉字"}},
-                "required": ["word"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "random_practice_char",
-            "description": "当用户不知道练什么字，让你推荐时调用，返回一个单字",
-            "parameters": {"type": "object", "properties": {}}
-        }
-    }
+    {"type": "function", "function": {"name": "get_calligraphy_knowledge", "description": "查询书体知识", "parameters": {"type": "object", "properties": {"style_name": {"type": "string"}}, "required": ["style_name"]}}},
+    {"type": "function", "function": {"name": "get_calligraphy_styles", "description": "查询汉字写法", "parameters": {"type": "object", "properties": {"word": {"type": "string"}}, "required": ["word"]}}},
+    {"type": "function", "function": {"name": "random_practice_char", "description": "随机抽字", "parameters": {"type": "object", "properties": {}}}}
 ]
 
 # ================= 3. 展示书法真迹（带“劉志強印”） =================
@@ -88,18 +59,9 @@ def show_calligraphy_art(char, style="楷书"):
     }
     font_family = font_map.get(style, "'KaiTi', '楷体', serif")
     
-    # 👇 核心修改：繁体字 2x2 网格印章 👇
-    html = f"""
-    <div style="background-color: #F9F6EE; border: 2px solid #D3CBB8; border-radius: 8px; padding: 40px; text-align: center; margin: 20px 0; box-shadow: 0 8px 16px rgba(0,0,0,0.1); position: relative;">
-        <h1 style="font-family: {font_family}; font-size: 120px; color: #1A1A1A; margin: 0; line-height: 1.2; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">{char}</h1>
-        
-        <!-- 模拟红色印章（2x2 网格排版） -->
-        <div style="position: absolute; bottom: 30px; right: 30px; width: 60px; height: 60px; border: 3px solid #B22222; color: #B22222; font-family: 'KaiTi', '楷体', serif; font-size: 18px; font-weight: bold; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; align-items: center; justify-items: center; transform: rotate(-5deg); border-radius: 4px; padding: 2px; line-height: 1;">
-            <span>劉</span><span>志</span>
-            <span>強</span><span>印</span>
-        </div>
-    </div>
-    """
+    # 💡 核心修复：将整个 HTML 压缩成一行，防止 Streamlit 解析失败！
+    html = f'<div style="background-color: #F9F6EE; border: 2px solid #D3CBB8; border-radius: 8px; padding: 40px; text-align: center; margin: 20px 0; box-shadow: 0 8px 16px rgba(0,0,0,0.1); position: relative;"><h1 style="font-family: {font_family}; font-size: 120px; color: #1A1A1A; margin: 0; line-height: 1.2; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">{char}</h1><div style="position: absolute; bottom: 30px; right: 30px; width: 60px; height: 60px; border: 3px solid #B22222; color: #B22222; font-family: \'KaiTi\', \'楷体\', serif; font-size: 16px; font-weight: bold; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; transform: rotate(-5deg); border-radius: 4px; line-height: 1;"><div style="width: 50%; text-align: center;">劉</div><div style="width: 50%; text-align: center;">志</div><div style="width: 50%; text-align: center;">強</div><div style="width: 50%; text-align: center;">印</div></div></div>'
+    
     st.markdown(html, unsafe_allow_html=True)
 
 # ================= 4. 聊天界面 =================
@@ -144,15 +106,15 @@ if prompt := st.chat_input("与大师对话..."):
                     function_args = json.loads(tool_call["function"]["arguments"])
                     
                     if function_name == "get_calligraphy_knowledge":
-                        st.info(f"📖 董师正在翻阅典籍，查阅【{function_args.get('style_name')}】...")
+                        st.info(f"📖 大师正在翻阅典籍，查阅【{function_args.get('style_name')}】...")
                         function_response = get_calligraphy_knowledge(function_args.get("style_name"))
                         style_to_display = function_args.get("style_name")
                     elif function_name == "get_calligraphy_styles":
-                        st.info(f"🔍 董师正在查阅【{function_args.get('word')}】字的写法...")
+                        st.info(f"🔍 大师正在查阅【{function_args.get('word')}】字的写法...")
                         function_response = get_calligraphy_styles(function_args.get("word"))
                         char_to_display = function_args.get("word")
                     elif function_name == "random_practice_char":
-                        st.info("🎲 董师正在为你随机抽取练习字...")
+                        st.info("🎲 大师正在为你随机抽取练习字...")
                         char_result = random_practice_char()
                         function_response = f"抽签结果：今日宜练“{char_result}”字。"
                         char_to_display = char_result
@@ -166,7 +128,7 @@ if prompt := st.chat_input("与大师对话..."):
                         "content": str(function_response)
                     })
                 
-                with st.spinner("董师正在挥毫泼墨..."):
+                with st.spinner("大师正在挥毫泼墨..."):
                     data2 = {"model": "deepseek-chat", "messages": [{"role": "system", "content": system_prompt}] + st.session_state.messages}
                     final_response = requests.post(url, headers=headers, json=data2, timeout=30).json()
                     final_reply = final_response["choices"][0]["message"]["content"]
