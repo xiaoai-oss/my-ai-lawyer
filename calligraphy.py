@@ -77,9 +77,8 @@ tools = [
     }
 ]
 
-# 👇 新增：展示书法真迹的 HTML 组件 👇
+# ================= 3. 展示书法真迹（带“劉志強印”） =================
 def show_calligraphy_art(char, style="楷书"):
-    # 根据书体选择不同的 CSS 字体
     font_map = {
         "楷书": "'KaiTi', '楷体', serif",
         "行书": "'STXingkai', '华文行楷', cursive",
@@ -89,18 +88,21 @@ def show_calligraphy_art(char, style="楷书"):
     }
     font_family = font_map.get(style, "'KaiTi', '楷体', serif")
     
+    # 👇 核心修改：繁体字 2x2 网格印章 👇
     html = f"""
     <div style="background-color: #F9F6EE; border: 2px solid #D3CBB8; border-radius: 8px; padding: 40px; text-align: center; margin: 20px 0; box-shadow: 0 8px 16px rgba(0,0,0,0.1); position: relative;">
         <h1 style="font-family: {font_family}; font-size: 120px; color: #1A1A1A; margin: 0; line-height: 1.2; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">{char}</h1>
-        <!-- 模拟红色印章 -->
-        <div style="position: absolute; bottom: 30px; right: 30px; width: 50px; height: 50px; border: 3px solid #B22222; color: #B22222; font-family: 'KaiTi'; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; transform: rotate(-5deg); border-radius: 4px;">
-            大师<br>之印
+        
+        <!-- 模拟红色印章（2x2 网格排版） -->
+        <div style="position: absolute; bottom: 30px; right: 30px; width: 60px; height: 60px; border: 3px solid #B22222; color: #B22222; font-family: 'KaiTi', '楷体', serif; font-size: 18px; font-weight: bold; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; align-items: center; justify-items: center; transform: rotate(-5deg); border-radius: 4px; padding: 2px; line-height: 1;">
+            <span>劉</span><span>志</span>
+            <span>強</span><span>印</span>
         </div>
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
 
-# ================= 3. 聊天界面 =================
+# ================= 4. 聊天界面 =================
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "assistant", "content": "阿弥陀佛。我是书法大师。今日想请教哪幅字？想了解五大书体，还是让我为你抽个字练练手？"}
@@ -134,7 +136,7 @@ if prompt := st.chat_input("与大师对话..."):
             
             if tool_calls:
                 st.session_state.messages.append(response_message)
-                char_to_display = None # 记录要展示的字
+                char_to_display = None 
                 style_to_display = "楷书"
                 
                 for tool_call in tool_calls:
@@ -142,15 +144,15 @@ if prompt := st.chat_input("与大师对话..."):
                     function_args = json.loads(tool_call["function"]["arguments"])
                     
                     if function_name == "get_calligraphy_knowledge":
-                        st.info(f"📖 大师正在翻阅典籍，查阅【{function_args.get('style_name')}】...")
+                        st.info(f"📖 董师正在翻阅典籍，查阅【{function_args.get('style_name')}】...")
                         function_response = get_calligraphy_knowledge(function_args.get("style_name"))
                         style_to_display = function_args.get("style_name")
                     elif function_name == "get_calligraphy_styles":
-                        st.info(f"🔍 大师正在查阅【{function_args.get('word')}】字的写法...")
+                        st.info(f"🔍 董师正在查阅【{function_args.get('word')}】字的写法...")
                         function_response = get_calligraphy_styles(function_args.get("word"))
                         char_to_display = function_args.get("word")
                     elif function_name == "random_practice_char":
-                        st.info("🎲 大师正在为你随机抽取练习字...")
+                        st.info("🎲 董师正在为你随机抽取练习字...")
                         char_result = random_practice_char()
                         function_response = f"抽签结果：今日宜练“{char_result}”字。"
                         char_to_display = char_result
@@ -164,14 +166,13 @@ if prompt := st.chat_input("与大师对话..."):
                         "content": str(function_response)
                     })
                 
-                with st.spinner("大师正在挥毫泼墨..."):
+                with st.spinner("董师正在挥毫泼墨..."):
                     data2 = {"model": "deepseek-chat", "messages": [{"role": "system", "content": system_prompt}] + st.session_state.messages}
                     final_response = requests.post(url, headers=headers, json=data2, timeout=30).json()
                     final_reply = final_response["choices"][0]["message"]["content"]
                     
                     with st.chat_message("assistant"):
                         st.write(final_reply)
-                        # 👇 如果有要展示的字，直接渲染出书法作品 👇
                         if char_to_display:
                             show_calligraphy_art(char_to_display, style_to_display)
                             
