@@ -1,9 +1,10 @@
-import streamlit as st
+    import streamlit as st
 import requests
 import json
 import random
 import asyncio
 import edge_tts
+import re
 
 st.set_page_config(page_title="AI 书法大师", page_icon="🖌️", layout="centered")
 
@@ -21,12 +22,13 @@ st.markdown("""
 st.title("🖌️ AI 书法大师")
 st.caption("研墨、铺纸、提笔。跟大师聊聊书法，或者让它给你出个题。")
 
-# 👇 语音生成函数 👇
+# 👇 语音生成函数（带 Markdown 符号清洗功能） 👇
 def generate_voice(text, filename="shufa_voice.mp3"):
+    clean_text = re.sub(r'[*#`~_>]', '', text)
     voice = "zh-CN-YunjianNeural"
     rate = "-15%" 
     async def _generate():
-        communicate = edge_tts.Communicate(text, voice, rate=rate)
+        communicate = edge_tts.Communicate(clean_text, voice, rate=rate)
         await communicate.save(filename)
     asyncio.run(_generate())
     return filename
@@ -60,7 +62,7 @@ tools = [
     {"type": "function", "function": {"name": "random_practice_char", "description": "随机抽字", "parameters": {"type": "object", "properties": {}}}}
 ]
 
-# ================= 3. 展示书法真迹 =================
+# ================= 3. 展示书法真迹（已改为横排） =================
 def show_calligraphy_art(text, style="楷书"):
     font_map = {
         "楷书": "'KaiTi', '楷体', serif",
@@ -70,13 +72,16 @@ def show_calligraphy_art(text, style="楷书"):
         "篆书": "'KaiTi', '楷体', serif"
     }
     font_family = font_map.get(style, "'KaiTi', '楷体', serif")
-    font_size = "80px" if len(text) <= 2 else "60px" if len(text) <= 4 else "40px"
     
-    # 💡 HTML 被压缩成了一行，防止 Streamlit 渲染出错
-    html = f'<div style="background-color: #F9F6EE; border: 2px solid #D3CBB8; border-radius: 8px; padding: 30px 20px; text-align: center; margin: 20px 0; box-shadow: 0 8px 16px rgba(0,0,0,0.1); position: relative; min-height: 400px; display: flex; justify-content: center;"><div style="writing-mode: vertical-rl; text-orientation: upright; font-family: {font_family}; font-size: {font_size}; color: #1A1A1A; line-height: 1.5; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">{text}</div><div style="position: absolute; bottom: 30px; right: 30px; width: 60px; height: 60px; border: 3px solid #B22222; color: #B22222; font-family: \'KaiTi\', \'楷体\', serif; font-size: 16px; font-weight: bold; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; transform: rotate(-5deg); border-radius: 4px; line-height: 1;"><div style="width: 50%; text-align: center;">劉</div><div style="width: 50%; text-align: center;">志</div><div style="width: 50%; text-align: center;">強</div><div style="width: 50%; text-align: center;">印</div></div></div>'
+    # 字号调整，横排可以稍微大一点，并加上字间距 (letter-spacing)
+    font_size = "90px" if len(text) <= 2 else "70px" if len(text) <= 4 else "50px"
+    
+    # 💡 核心修改：去掉了 vertical-rl，改为横排，并加上了 letter-spacing 增加字间距
+    html = f'<div style="background-color: #F9F6EE; border: 2px solid #D3CBB8; border-radius: 8px; padding: 40px 20px; text-align: center; margin: 20px 0; box-shadow: 0 8px 16px rgba(0,0,0,0.1); position: relative; min-height: 300px; display: flex; align-items: center; justify-content: center;"><div style="font-family: {font_family}; font-size: {font_size}; color: #1A1A1A; line-height: 1.2; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); letter-spacing: 15px; margin-right: -15px;">{text}</div><div style="position: absolute; bottom: 30px; right: 30px; width: 60px; height: 60px; border: 3px solid #B22222; color: #B22222; font-family: \'KaiTi\', \'楷体\', serif; font-size: 16px; font-weight: bold; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; transform: rotate(-5deg); border-radius: 4px; line-height: 1;"><div style="width: 50%; text-align: center;">劉</div><div style="width: 50%; text-align: center;">志</div><div style="width: 50%; text-align: center;">強</div><div style="width: 50%; text-align: center;">印</div></div></div>'
+    
     st.markdown(html, unsafe_allow_html=True)
 
-# ================= 4. 五体书展（主界面折叠区） =================
+# ================= 4. 五体书展 =================
 with st.expander("📜 点击展开：五体书展（选择书体看效果）", expanded=False):
     demo_style = st.selectbox("选择书体", ["篆书", "隶书", "楷书", "行书", "草书"])
     demo_text = st.text_input("输入想写的字（建议4个字以内）", value="天道酬勤")
